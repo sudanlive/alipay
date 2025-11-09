@@ -33,6 +33,8 @@ public class Payment {
     private String resultMessage;
     private String approvalDate;
     private String statusCode;
+
+    @Column(length = 50)
     private String walletBrandName;
 
     @Column(nullable = false)

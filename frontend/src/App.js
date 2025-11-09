@@ -49,6 +49,7 @@ function Alipay() {
     { id: 3, name: "Folk Art Documentary", price: 75, quantity: 1 }
   ]);
   const [loading, setLoading] = useState(false);
+  const [walletType, setWalletType] = useState("ALIPAY_CN");
 
   const updateQuantity = (id, delta) => {
     setCartItems(items =>
@@ -82,7 +83,8 @@ function Alipay() {
         returnUrl: `${window.location.origin}/payment/return`,
         notifyUrl: `${window.location.origin}/api/payment/notify`,
         currency: "USD",
-        totalAmount: Math.round(total * 100)
+        totalAmount: Math.round(total * 100),
+        walletBrandName: walletType
       };
 
       const response = await fetch("/api/payment/alipay", {
@@ -251,6 +253,39 @@ function Alipay() {
             </div>
           </div>
 
+          {/* Wallet Selection */}
+          <div style={{
+            backgroundColor: "#f9f9f9",
+            borderRadius: "8px",
+            padding: "15px",
+            marginBottom: "20px"
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: "15px" }}>Select Payment Wallet</h3>
+            
+            <select
+              value={walletType}
+              onChange={(e) => setWalletType(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "16px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+                cursor: "pointer"
+              }}
+            >
+              <option value="ALIPAY_CN">Alipay CN (China)</option>
+              <option value="ALIPAY_HK">Alipay HK (Hong Kong)</option>
+              <option value="CONNECT_WALLET">Connect Wallet</option>
+              <option value="TRUEMONEY">TrueMoney (Thailand)</option>
+              <option value="TNG">Touch 'n Go (Malaysia)</option>
+              <option value="GCASH">GCash (Philippines)</option>
+              <option value="DANA">DANA (Indonesia)</option>
+              <option value="KAKAOPAY">KakaoPay (Korea)</option>
+            </select>
+          </div>
+
           {/* Payment Button */}
           <button
             onClick={handlePayment}
@@ -268,7 +303,7 @@ function Alipay() {
               marginBottom: "10px"
             }}
           >
-            {loading ? "Processing..." : `Pay with Alipay - $${total.toFixed(2)}`}
+            {loading ? "Processing..." : `Pay with ${walletType.replace('_', ' ')} - $${total.toFixed(2)}`}
           </button>
           
           <p style={{
@@ -277,7 +312,7 @@ function Alipay() {
             color: "#666",
             margin: "10px 0"
           }}>
-            Secure payment powered by Alipay
+            Secure payment powered by Alipay+
           </p>
         </>
       )}

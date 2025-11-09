@@ -52,7 +52,7 @@ public class PaymentController {
             requestBody.put("goodsDetail", paymentRequest.getGoodsDetail());
             requestBody.put("returnUrl", paymentRequest.getReturnUrl() + "?orderNo=" + paymentRequest.getOrderNo());
             requestBody.put("notifyUrl", paymentRequest.getNotifyUrl());
-            requestBody.put("walletBrandName", "ALIPAY_CN");
+            requestBody.put("walletBrandName", paymentRequest.getWalletBrandName() != null ? paymentRequest.getWalletBrandName() : "ALIPAY_CN");
             requestBody.put("terminalType", "WEB");
 
             Map<String, Object> amountInfo = new HashMap<>();
@@ -90,6 +90,7 @@ public class PaymentController {
                 payment.setCurrency(paymentRequest.getCurrency());
                 payment.setTotalAmount(paymentRequest.getTotalAmount().longValue());
                 payment.setPaymentUrl((String) responseBody.get("paymentPageUrl"));
+                payment.setWalletBrandName(paymentRequest.getWalletBrandName() != null ? paymentRequest.getWalletBrandName() : "ALIPAY_CN");
                 payment.setStatus("PENDING");
                 
                 paymentRepository.save(payment);

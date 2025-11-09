@@ -8,6 +8,7 @@ public class PaymentRequest {
     private String notifyUrl;
     private String currency;
     private Integer totalAmount;
+    private String walletBrandName;
 
     public PaymentRequest() {}
 
@@ -32,4 +33,12 @@ public class PaymentRequest {
 
     public Integer getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Integer totalAmount) { this.totalAmount = totalAmount; }
+
+    public String getWalletBrandName() {
+        return walletBrandName;
+    }
+
+    public void setWalletBrandName(String walletBrandName) {
+        this.walletBrandName = walletBrandName;
+    }
 }
