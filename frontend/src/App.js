@@ -99,8 +99,9 @@ function Alipay() {
 
       if (response.ok && result.success) {
         if (result.paymentUrl) {
-          // Store payment URL in sessionStorage
+          // Store payment URL and order number in sessionStorage
           sessionStorage.setItem("paymentUrl", result.paymentUrl);
+          sessionStorage.setItem("orderNo", orderNo);
           // Navigate to processing page
           navigate("/payment/processing");
         } else {
@@ -321,21 +322,79 @@ function Alipay() {
 }
 
 function PaymentProcessing() {
+  const navigate = useNavigate();
   const [paymentUrl, setPaymentUrl] = useState("");
+  const [orderNo, setOrderNo] = useState("");
+  const [status, setStatus] = useState("redirecting");
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [redirected, setRedirected] = useState(false);
 
   useEffect(() => {
     // Get payment URL from sessionStorage
     const url = sessionStorage.getItem("paymentUrl");
-    if (url) {
+    const storedOrderNo = sessionStorage.getItem("orderNo");
+    
+    if (url && storedOrderNo) {
       setPaymentUrl(url);
+      setOrderNo(storedOrderNo);
+      
       // Redirect to Alipay after 2 seconds
       const timer = setTimeout(() => {
+        setRedirected(true);
+        setStatus("waiting");
         window.location.href = url;
       }, 2000);
 
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Poll payment status every 5 seconds after redirect
+  useEffect(() => {
+    if (!redirected || !orderNo) return;
+
+    const checkPaymentStatus = async () => {
+      if (checkingStatus) return;
+      
+      setCheckingStatus(true);
+      try {
+        console.log(`Checking payment status for order: ${orderNo}`);
+        const response = await fetch(`/api/payment/status/${orderNo}`);
+        const data = await response.json();
+        
+        console.log("Payment status:", data.status);
+
+        if (response.ok) {
+          if (data.status === "SUCCESS") {
+            console.log("Payment successful, redirecting...");
+            // Clear session storage
+            sessionStorage.removeItem("paymentUrl");
+            sessionStorage.removeItem("orderNo");
+            // Redirect to return page
+            navigate(`/payment/return?orderNo=${orderNo}`);
+          } else if (data.status === "FAILED") {
+            console.log("Payment failed, redirecting...");
+            sessionStorage.removeItem("paymentUrl");
+            sessionStorage.removeItem("orderNo");
+            navigate(`/payment/return?orderNo=${orderNo}`);
+          }
+          // If PENDING, continue polling
+        }
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    // Start polling immediately
+    checkPaymentStatus();
+
+    // Then poll every 5 seconds
+    const interval = setInterval(checkPaymentStatus, 5000);
+
+    return () => clearInterval(interval);
+  }, [redirected, orderNo, checkingStatus, navigate]);
 
   return (
     <div style={{
@@ -364,7 +423,7 @@ function PaymentProcessing() {
           color: "#1677ff",
           marginBottom: "15px"
         }}>
-          Payment Processing
+          {status === "redirecting" ? "Payment Processing" : "Waiting for Payment Confirmation"}
         </h2>
         
         <p style={{
@@ -372,15 +431,29 @@ function PaymentProcessing() {
           color: "#666",
           marginBottom: "10px"
         }}>
-          Your payment is being processed at Alipay
+          {status === "redirecting" 
+            ? "Your payment is being processed at Alipay"
+            : "Please complete your payment in the Alipay window"}
         </p>
         
         <p style={{
           fontSize: "14px",
           color: "#999"
         }}>
-          You will be redirected to Alipay payment page shortly...
+          {status === "redirecting"
+            ? "You will be redirected to Alipay payment page shortly..."
+            : "Checking payment status..."}
         </p>
+
+        {orderNo && (
+          <p style={{
+            fontSize: "12px",
+            color: "#999",
+            marginTop: "20px"
+          }}>
+            Order: {orderNo}
+          </p>
+        )}
       </div>
 
       <style>{`
@@ -598,7 +671,7 @@ function PaymentReturn() {
             <div style={{ marginBottom: "10px" }}>
               <strong>Amount:</strong> {orderDetails.currency} {(orderDetails.totalAmount / 100).toFixed(2)}
             </div>
-            
+
             <div style={{ marginBottom: "10px" }}>
               <strong>Status:</strong>{" "}
               <span style={{ 
